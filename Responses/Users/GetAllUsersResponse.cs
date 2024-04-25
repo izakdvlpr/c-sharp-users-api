@@ -1,6 +1,8 @@
+using UserApi.Models;
+
 namespace UserApi.Responses;
 
 public class GetAllUsersResponses
 {
-    public List<UserResponse> Users { get; set; }
+    public List<User> Users { get; set; }
 }

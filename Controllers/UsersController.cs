@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using UserApi.Bases;
 using UserApi.Models;
 using UserApi.Repositories;
 using UserApi.Repositories.Implementations;
 using UserApi.Requests.Users;
 using UserApi.Responses;
 using UserApi.Responses.Common;
+using UserApi.Utils;
 
 namespace UserApi.Controllers;
 
@@ -13,18 +15,24 @@ namespace UserApi.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly UserRepository _userRepository = new InMemoryUserRepository();
-    
+
     /// <summary>
     /// Create a new user.
     /// </summary>
     [HttpPost]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(UserResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(CreateUserResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public IActionResult CreateUser([FromBody] CreateUserRequest request)
     {
-        var user = new User(request.Name, request.Email, request.Password);
-        
+        var user = new User(
+            new UserProps(
+                request.Name,
+                request.Email,
+                new PasswordUtils().HashPassword(request.Password)
+            )
+        );
+
         if (_userRepository.FindByEmail(user.Email) != null)
         {
             var error = new Error
@@ -33,29 +41,32 @@ public class UsersController : ControllerBase
                 Code = "UserAlreadyExists",
                 Status = StatusCodes.Status400BadRequest
             };
-            
+
             Response.StatusCode = error.Status;
 
-            return new JsonResult(new { error });
+            return new JsonResult(error);
         }
-        
+
         _userRepository.Create(user);
 
         return Created(
             "",
             new CreateUserResponse
             {
-                User = new UserResponse
-                {
-                    Id = user.Id,
-                    Name = user.Name,
-                    Email = user.Email,
-                    CreatedAt = user.CreatedAt
-                }
+                User = new User(
+                    new UserProps(
+                        user.Name,
+                        user.Email,
+                        user.Password,
+                        user.CreatedAt,
+                        user.UpdatedAt
+                    ),
+                    user.Id
+                )
             }
         );
     }
-    
+
     /// <summary>
     /// Get all users.
     /// </summary>
@@ -70,136 +81,152 @@ public class UsersController : ControllerBase
             new GetAllUsersResponses
             {
                 Users = users.Select(
-                    user => new UserResponse
-                    {
-                        Id = user.Id,
-                        Name = user.Name,
-                        Email = user.Email,
-                        CreatedAt = user.CreatedAt
-                    }
+                    user => new User(
+                        new UserProps(
+                            user.Name,
+                            user.Email,
+                            user.Password,
+                            user.CreatedAt,
+                            user.UpdatedAt
+                        ),
+                        user.Id
+                    )
                 ).ToList()
             }
         );
     }
-    
+
     /// <summary>
     /// Get a user by id.
     /// </summary>
     [HttpGet("{userId}")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(GetUserByIdResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public IActionResult GetUserById([FromRoute] Guid userId)
     {
         var user = _userRepository.FindById(userId);
 
         if (user == null)
         {
-            var error = new Error
+            var error = new ErrorResponse
             {
-                Message = "User not found",
-                Code = "UserNotFound",
-                Status = StatusCodes.Status404NotFound
+                Error = new Error
+                {
+                    Message = "User not found",
+                    Code = "UserNotFound",
+                    Status = StatusCodes.Status404NotFound
+                }
             };
-            
-            Response.StatusCode = error.Status;
 
-            return new JsonResult(new { error });
+            Response.StatusCode = error.Error.Status;
+
+            return new JsonResult(error);
         }
 
         return Ok(
-            new UserResponse
+            new GetUserByIdResponse
             {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                CreatedAt = user.CreatedAt
+                User = new User(
+                    new UserProps(
+                        user.Name,
+                        user.Email,
+                        user.Password,
+                        user.CreatedAt,
+                        user.UpdatedAt
+                    ),
+                    user.Id
+                )
             }
         );
     }
-    
+
     /// <summary>
     /// Update a user by id.
     /// </summary>
-    [HttpPut("{userId}")]
+    [HttpPatch("{userId}")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    public IActionResult UpdateUserById([FromRoute] Guid userId, [FromBody] UpdateUserRequest request)
+    [ProducesResponseType(typeof(UpdateUserByIdResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public IActionResult UpdateUserById([FromRoute] Guid userId, [FromBody] UpdateUserRequest? request)
     {
         var user = _userRepository.FindById(userId);
 
         if (user == null)
         {
-            var error = new Error
+            var error = new ErrorResponse
             {
-                Message = "User not found",
-                Code = "UserNotFound",
-                Status = StatusCodes.Status404NotFound
+                Error = new Error
+                {
+                    Message = "User not found",
+                    Code = "UserNotFound",
+                    Status = StatusCodes.Status404NotFound
+                }
             };
-            
-            Response.StatusCode = error.Status;
 
-            return new JsonResult(new { error });
+            Response.StatusCode = error.Error. Status;
+
+            return new JsonResult(error);
         }
-        
-        if (request.Name != null) user.Name = request.Name;
-        if (request.Email != null) user.Email = request.Email;
-        if (request.Password != null) user.Password = request.Password;
+
+        user.Name = request?.Name ?? user.Name;
+        user.Email = request?.Email ?? user.Email;
+        user.Password = request?.Password ?? user.Password;
+        user.UpdatedAt = DateTime.Now;
 
         _userRepository.Update(user);
 
         return Ok(
             new UpdateUserByIdResponse
             {
-                User = new UserResponse
-                {
-                    Id = user.Id,
-                    Name = user.Name,
-                    Email = user.Email,
-                    CreatedAt = user.CreatedAt
-                }
+                User = new User(
+                    new UserProps(
+                        user.Name,
+                        user.Email,
+                        user.Password,
+                        user.CreatedAt,
+                        user.UpdatedAt
+                    ),
+                    user.Id
+                )
             }
         );
     }
-    
+
     /// <summary>
     /// Delete a user by id.
     /// </summary>
     [HttpDelete("{userId}")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(DeleteUserByIdResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public IActionResult DeleteUserById([FromRoute] Guid userId)
     {
         var user = _userRepository.FindById(userId);
 
         if (user == null)
         {
-            var error = new Error
+            var error = new ErrorResponse
             {
-                Message = "User not found",
-                Code = "UserNotFound",
-                Status = StatusCodes.Status404NotFound
+                Error = new Error
+                {
+                    Message = "User not found",
+                    Code = "UserNotFound",
+                    Status = StatusCodes.Status404NotFound
+                }
             };
-            
-            Response.StatusCode = error.Status;
 
-            return new JsonResult(new { error });
+            Response.StatusCode = error.Error.Status;
+
+            return new JsonResult(error);
         }
 
-        _userRepository.Delete(userId);
+        _userRepository.Delete(user);
 
         return Ok(
             new DeleteUserByIdResponse
             {
-                User = new UserResponse
-                {
-                    Id = user.Id,
-                    Name = user.Name,
-                    Email = user.Email,
-                    CreatedAt = user.CreatedAt
-                }
+                UserId = user.Id
             }
         );
     }

@@ -1,4 +1,4 @@
-namespace UserApi.Responses.Common;
+namespace UserApi.Bases;
 
 public class Error
 {

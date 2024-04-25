@@ -33,33 +33,24 @@ public class InMemoryUserRepository : UserRepository
         return _users.Find(user => user.Email == email);
     }
     
-    public bool Update(User user)
+    public User? Update(User user)
     {
         var _user = _users.Find(__user => __user.Id == user.Id);
         
         if (_user == null)
         {
-            return false;
+            return null;
         }
         
         _user.Name = user.Name;
         _user.Email = user.Email;
         _user.Password = user.Password;
         
-        return true;
+        return _user;
     }
     
-    public bool Delete(Guid id)
+    public void Delete(User user)
     {
-        var user = _users.Find(user => user.Id == id);
-        
-        if (user == null)
-        {
-            return false;
-        }
-        
         _users.Remove(user);
-        
-        return true;
     }
 }

@@ -9,6 +9,6 @@ public interface UserRepository
     User? FindById(Guid id);
     User? FindByName(string name);
     User? FindByEmail(string email);
-    bool Update(User user);
-    bool Delete(Guid id);
+    User? Update(User user);
+    void Delete(User user);
 }

@@ -1,6 +1,8 @@
+using UserApi.Models;
+
 namespace UserApi.Responses;
 
 public class UpdateUserByIdResponse
 {
-    public UserResponse User { get; set; }
+    public User User { get; set; }
 }
