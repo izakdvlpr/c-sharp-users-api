@@ -72,13 +72,13 @@ public class UsersController : ControllerBase
     /// </summary>
     [HttpGet]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(GetAllUsersResponses), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(GetAllUsersResponse), StatusCodes.Status200OK)]
     public IActionResult GetAllUsers()
     {
         var users = _userRepository.FindMany();
 
         return Ok(
-            new GetAllUsersResponses
+            new GetAllUsersResponse
             {
                 Users = users.Select(
                     user => new User(
