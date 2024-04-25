@@ -29,7 +29,7 @@ public class UsersController : ControllerBase
             new UserProps(
                 request.Name,
                 request.Email,
-                new PasswordUtils().HashPassword(request.Password)
+                new Password().HashPassword(request.Password)
             )
         );
 

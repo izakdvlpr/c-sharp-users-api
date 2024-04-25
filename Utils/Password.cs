@@ -1,6 +1,6 @@
 ﻿namespace UserApi.Utils;
 
-public class PasswordUtils
+public class Password
 {
     public string HashPassword(string password)
     {

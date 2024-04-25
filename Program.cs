@@ -1,5 +1,11 @@
 using System.Reflection;
 using Microsoft.OpenApi.Models;
+using UserApi.Utils;
+
+var root = Directory.GetCurrentDirectory();
+var dotenv = Path.Combine(root, ".env");
+
+DotEnv.Load(dotenv);
 
 var builder = WebApplication.CreateBuilder(args);
 
