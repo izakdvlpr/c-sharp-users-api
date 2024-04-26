@@ -1,6 +1,6 @@
 namespace UserApi.Config;
 
-public static class Server
+public static class ServerExtension
 {
     public static void AddCustomRouting(this IServiceCollection services)
     {

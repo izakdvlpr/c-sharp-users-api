@@ -15,13 +15,9 @@ builder.Services.AddCustomCors();
 
 var app = builder.Build();
 
-app.Urls.Add($"http://*:{Environment.GetEnvironmentVariable("HTTP_SERVER_PORT")}");
-
 app.UseCustomSwagger();
 app.UseCustomSwaggerUI();
 
 app.MapControllers();
 
-// app.UseHttpsRedirection();
-
-app.Run();
+app.Run($"http://*:{Environment.GetEnvironmentVariable("HTTP_SERVER_PORT")}");
